@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Netlify auto-detects Next.js and uses OpenNext adapter.
+# Add these env vars in Netlify Dashboard > Site settings > Environment variables:
+#   NEXT_PUBLIC_SANITY_PROJECT_ID = rbvc65h6
+#   NEXT_PUBLIC_SANITY_DATASET = production
+#
+# Add your Netlify domain to Sanity CORS origins at sanity.io/manage
