@@ -31,6 +31,21 @@ export const mediaItemType = defineType({
       description: 'URL to .m3u8 HLS playlist',
       hidden: ({ parent }) => parent?.mediaType !== 'video',
     }),
+    defineField({
+      name: 'fitMode',
+      title: 'Display',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Fit', value: 'fit' },
+          { title: 'Fill', value: 'fill' },
+        ],
+        layout: 'radio',
+      },
+      description:
+        'Fit: vertical content fits inside 100vh viewport. Fill: content fills the width at its natural height (no cropping).',
+      initialValue: 'fit',
+    }),
   ],
   preview: {
     select: {

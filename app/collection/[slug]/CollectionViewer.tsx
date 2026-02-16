@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { HlsVideo } from './HlsVideo';
 
 type Project = {
@@ -10,6 +10,7 @@ type Project = {
     mediaType: string;
     imageUrl?: string;
     hlsUrl?: string;
+    fitMode?: 'fit' | 'fill';
   }>;
 };
 
@@ -20,21 +21,48 @@ type CollectionData = {
   projects: Project[];
 };
 
+const PASSWORD_STYLE = {
+  fontFamily: "'ABCDiatype', sans-serif",
+  fontWeight: 500,
+  fontSize: '27px',
+  lineHeight: '32px',
+  letterSpacing: '0.02em',
+};
+
 export function CollectionViewer({
   slug,
-  title,
+  title: _title,
 }: {
   slug: string;
   title: string;
 }) {
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<CollectionData | null>(null);
+  const [showPassword, setShowPassword] = useState(true);
+  const [showContent, setShowContent] = useState(false);
+  const [isPasswordHovered, setIsPasswordHovered] = useState(false);
+  const [mediaDimensions, setMediaDimensions] = useState<
+    Record<string, { width: number; height: number }>
+  >({});
+  const [isMobile, setIsMobile] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const setMediaAspect = (key: string, width: number, height: number) => {
+    setMediaDimensions((prev) => ({ ...prev, [key]: { width, height } }));
+  };
+
+  const isPasswordActive = password.length > 0 || isPasswordHovered;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       const res = await fetch(`/api/collection/${slug}/verify`, {
@@ -44,57 +72,117 @@ export function CollectionViewer({
       });
       const json = await res.json();
       if (json.success && json.data) {
-        setData(json.data);
-      } else {
-        setError(json.error ?? 'Invalid password');
+        setShowPassword(false);
+        setTimeout(() => {
+          setData(json.data);
+          setShowContent(true);
+        }, 400);
       }
     } catch {
-      setError('Something went wrong');
+      // Don't do anything on error
     } finally {
       setLoading(false);
     }
   };
 
-  if (data) {
+  const handleContainerClick = () => {
+    inputRef.current?.focus();
+  };
+
+  if (data && showContent) {
     return (
       <main
+        className="content-fade-in"
         style={{
           width: '100%',
           margin: 0,
           padding: 0,
           overflowX: 'hidden',
+          minHeight: isMobile ? 0 : undefined,
         }}
       >
         {data.projects.map((project) => (
           <div key={project._id} style={{ width: '100%', margin: 0, padding: 0 }}>
-            {project.media?.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  width: '100%',
-                  margin: 0,
-                  padding: 0,
-                  lineHeight: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                {item.mediaType === 'image' && item.imageUrl && (
-                  <img
-                    src={item.imageUrl}
-                    alt=""
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      display: 'block',
-                      verticalAlign: 'bottom',
-                    }}
-                  />
-                )}
-                {item.mediaType === 'video' && item.hlsUrl && (
-                  <HlsVideo src={item.hlsUrl} />
-                )}
-              </div>
-            ))}
+            {project.media?.map((item, i) => {
+              const mediaKey = `${project._id}-${i}`;
+              const dims = mediaDimensions[mediaKey];
+              const isFill = item.fitMode === 'fill';
+              const isVertical = dims ? dims.height > dims.width : false;
+              const useVhContainer = !isFill && isVertical && !isMobile;
+
+              const containerStyle: React.CSSProperties = useVhContainer
+                ? {
+                    width: '100%',
+                    height: '100vh',
+                    minHeight: '100vh',
+                    maxHeight: '100vh',
+                    margin: 0,
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }
+                : {
+                    width: '100%',
+                    margin: 0,
+                    padding: 0,
+                    lineHeight: 0,
+                    overflow: 'hidden',
+                    minHeight: 0,
+                    ...(dims
+                      ? { aspectRatio: `${dims.width} / ${dims.height}` }
+                      : item.mediaType === 'video' && { aspectRatio: '16 / 9' }),
+                  };
+
+              const imgStyle: React.CSSProperties = useVhContainer
+                ? {
+                    maxWidth: '100%',
+                    maxHeight: '100vh',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    display: 'block',
+                  }
+                : {
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    verticalAlign: 'bottom',
+                  };
+
+              return (
+                <div key={i} style={containerStyle}>
+                  {item.mediaType === 'image' && item.imageUrl && (
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      style={imgStyle}
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        setMediaAspect(mediaKey, img.naturalWidth, img.naturalHeight);
+                      }}
+                    />
+                  )}
+                  {item.mediaType === 'video' && item.hlsUrl && (
+                    <div
+                      style={
+                        useVhContainer
+                          ? { width: '100%', height: '100%' }
+                          : { width: '100%', lineHeight: 0 }
+                      }
+                    >
+                      <HlsVideo
+                        src={item.hlsUrl}
+                        onLoadedMetadata={(video) =>
+                          setMediaAspect(mediaKey, video.videoWidth, video.videoHeight)
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
       </main>
@@ -103,57 +191,104 @@ export function CollectionViewer({
 
   return (
     <main
+      className="password-fade-in"
       style={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem',
+        pointerEvents: 'auto',
       }}
     >
       <form
         onSubmit={handleSubmit}
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          minWidth: '280px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          pointerEvents: 'auto',
         }}
       >
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{title}</h1>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          disabled={loading}
+        <div
           style={{
-            padding: '0.75rem 1rem',
-            fontSize: '1rem',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-          }}
-        />
-        {error && (
-          <p style={{ margin: 0, color: '#c00', fontSize: '0.9rem' }}>
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: '0.75rem 1rem',
-            fontSize: '1rem',
-            background: '#333',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
+            display: 'inline-flex',
+            alignItems: 'baseline',
+            gap: 0,
+            opacity: showPassword ? 1 : 0,
+            transition: 'opacity 0.4s ease-out',
           }}
         >
-          {loading ? 'Checking...' : 'Enter'}
-        </button>
+          <span
+            style={{
+              opacity: isPasswordActive ? 1 : 0.3,
+              color: isPasswordActive ? '#000' : undefined,
+              transition: 'none',
+              display: 'inline',
+              ...PASSWORD_STYLE,
+            }}
+            onClick={() => inputRef.current?.focus()}
+            onMouseEnter={() => setIsPasswordHovered(true)}
+            onMouseLeave={() => setIsPasswordHovered(false)}
+          >
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              <span style={{ whiteSpace: 'pre' }}>
+                {password || 'Password'}
+              </span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder=""
+                disabled={loading}
+                autoComplete="off"
+                aria-label="Password"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  padding: 0,
+                  margin: 0,
+                  font: 'inherit',
+                  letterSpacing: 'inherit',
+                  cursor: 'text',
+                  color: 'transparent',
+                  caretColor: '#000',
+                }}
+              />
+            </span>
+            ,<span style={{ whiteSpace: 'pre' }}> </span>
+          </span>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              color: '#000',
+              transition: 'none',
+              ...PASSWORD_STYLE,
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.opacity = '0.3';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            Enter
+          </button>
+        </div>
       </form>
     </main>
   );

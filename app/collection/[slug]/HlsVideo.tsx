@@ -3,7 +3,13 @@
 import { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 
-export function HlsVideo({ src }: { src: string }) {
+export function HlsVideo({
+  src,
+  onLoadedMetadata,
+}: {
+  src: string;
+  onLoadedMetadata?: (video: HTMLVideoElement) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -79,6 +85,7 @@ export function HlsVideo({ src }: { src: string }) {
       loop
       playsInline
       preload="auto"
+      onLoadedMetadata={(e) => onLoadedMetadata?.(e.currentTarget)}
       style={{
         width: '100%',
         height: '100%',

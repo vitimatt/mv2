@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import ExpandableHeader from './components/ExpandableHeader';
 
 export const metadata: Metadata = {
   title: 'Next.js + Sanity CMS',
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ExpandableHeader />
+        {children}
+      </body>
     </html>
   );
 }

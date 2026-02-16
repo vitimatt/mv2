@@ -19,7 +19,8 @@ export const COLLECTION_WITH_PROJECTS_QUERY = defineQuery(`
       "media": media[]{
         mediaType,
         "imageUrl": image.asset->url,
-        hlsUrl
+        hlsUrl,
+        fitMode
       }
     }
   }
