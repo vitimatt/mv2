@@ -16,6 +16,10 @@ export const COLLECTION_WITH_PROJECTS_QUERY = defineQuery(`
     "projects": projects[]->{
       _id,
       title,
+      workType,
+      year,
+      "with": with,
+      link,
       "media": media[]{
         mediaType,
         "imageUrl": image.asset->url,

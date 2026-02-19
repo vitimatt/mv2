@@ -5,10 +5,14 @@ import Hls from 'hls.js';
 
 export function HlsVideo({
   src,
+  priority = false,
   onLoadedMetadata,
+  onCanPlay,
 }: {
   src: string;
+  priority?: boolean;
   onLoadedMetadata?: (video: HTMLVideoElement) => void;
+  onCanPlay?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -18,23 +22,20 @@ export function HlsVideo({
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        maxBufferLength: 300,
-        maxMaxBufferLength: 600,
+        // Faster startup: start with lowest quality, upgrade as buffer fills
+        startLevel: priority ? 0 : -1,
+        // Smaller initial buffer = faster first frame; grow as we play
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        // Keep back buffer so we don't re-fetch when scrubbing/looping
+        backBufferLength: 30,
         startFragPrefetch: true,
-        capLevelToPlayerSize: false,
+        capLevelToPlayerSize: true,
         maxDevicePixelRatio: 2,
+        enableWorker: true,
       });
 
-      // Lock to highest quality from the start so loop doesn't replay low-quality segments
-      hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
-        if (data.levels.length > 0) {
-          const maxLevel = data.levels.length - 1;
-          hls.startLevel = maxLevel;
-          hls.loadLevel = maxLevel;
-        }
-      });
-
-      // Flush lower-quality segments when quality upgrades so they're re-fetched at high quality on loop
+      // Only flush low-quality segments when we have plenty of buffer (keeps videos loaded)
       let lastFragLevel = -1;
       hls.on(Hls.Events.FRAG_CHANGED, (_event, data) => {
         const { frag } = data;
@@ -44,7 +45,8 @@ export function HlsVideo({
         const isUpgrade = lastFragLevel >= 0 && currentLevel > lastFragLevel;
         lastFragLevel = currentLevel;
 
-        if (isUpgrade && frag.start > 0.5) {
+        const buffered = video.buffered.length ? video.buffered.end(video.buffered.length - 1) - video.currentTime : 0;
+        if (isUpgrade && frag.start > 0.5 && buffered > 15) {
           hls.trigger(Hls.Events.BUFFER_FLUSHING, {
             startOffset: 0,
             endOffset: frag.start - 0.1,
@@ -75,7 +77,7 @@ export function HlsVideo({
       video.addEventListener('ended', handleEnded);
       return () => video.removeEventListener('ended', handleEnded);
     }
-  }, [src]);
+  }, [src, priority]);
 
   return (
     <video
@@ -86,6 +88,7 @@ export function HlsVideo({
       playsInline
       preload="auto"
       onLoadedMetadata={(e) => onLoadedMetadata?.(e.currentTarget)}
+      onCanPlay={() => onCanPlay?.()}
       style={{
         width: '100%',
         height: '100%',

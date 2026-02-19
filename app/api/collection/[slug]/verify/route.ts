@@ -26,6 +26,10 @@ export async function POST(
       projects?: Array<{
         _id: string;
         title?: string;
+        workType?: string;
+        year?: string;
+        with?: string;
+        link?: string;
         media?: Array<{
           mediaType: string;
           imageUrl?: string;

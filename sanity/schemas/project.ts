@@ -73,6 +73,30 @@ export const projectType = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'workType',
+      title: 'Work type',
+      type: 'string',
+      description: 'e.g. Website, Design, Art Direction',
+    }),
+    defineField({
+      name: 'year',
+      title: 'Year',
+      type: 'string',
+      description: 'e.g. 2023 or 2023-2024',
+    }),
+    defineField({
+      name: 'with',
+      title: 'With',
+      type: 'string',
+      description: 'Collaborators or partners, e.g. w/Neue',
+    }),
+    defineField({
+      name: 'link',
+      title: 'Link',
+      type: 'url',
+      description: 'URL to the project or external site',
+    }),
+    defineField({
       name: 'media',
       title: 'Media',
       type: 'array',
@@ -83,10 +107,14 @@ export const projectType = defineType({
   preview: {
     select: {
       title: 'title',
+      workType: 'workType',
+      year: 'year',
     },
-    prepare({ title }) {
+    prepare({ title, workType, year }) {
+      const subtitle = [workType, year].filter(Boolean).join(' · ');
       return {
         title: title ?? 'Untitled Project',
+        subtitle: subtitle || undefined,
       };
     },
   },

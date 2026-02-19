@@ -3,9 +3,29 @@
 import { useState, useRef, useEffect } from 'react';
 import { HlsVideo } from './HlsVideo';
 
+function VideoManifestPreloader({ urls }: { urls: string[] }) {
+  useEffect(() => {
+    const ids: ReturnType<typeof setTimeout>[] = [];
+    urls.forEach((url, i) => {
+      const delay = i === 0 ? 0 : i * 150;
+      ids.push(
+        setTimeout(() => {
+          fetch(url, { mode: 'cors', credentials: 'omit' }).catch(() => {});
+        }, delay)
+      );
+    });
+    return () => ids.forEach((id) => clearTimeout(id));
+  }, [urls]);
+  return null;
+}
+
 type Project = {
   _id: string;
   title?: string;
+  workType?: string;
+  year?: string;
+  with?: string;
+  link?: string;
   media?: Array<{
     mediaType: string;
     imageUrl?: string;
@@ -45,6 +65,7 @@ export function CollectionViewer({
   const [mediaDimensions, setMediaDimensions] = useState<
     Record<string, { width: number; height: number }>
   >({});
+  const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
   const [isMobile, setIsMobile] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +78,10 @@ export function CollectionViewer({
 
   const setMediaAspect = (key: string, width: number, height: number) => {
     setMediaDimensions((prev) => ({ ...prev, [key]: { width, height } }));
+  };
+
+  const setMediaLoaded = (key: string) => {
+    setLoadedMedia((prev) => ({ ...prev, [key]: true }));
   };
 
   const isPasswordActive = password.length > 0 || isPasswordHovered;
@@ -90,6 +115,10 @@ export function CollectionViewer({
   };
 
   if (data && showContent) {
+    const allVideoUrls = data.projects.flatMap((p) =>
+      (p.media ?? []).filter((m): m is typeof m & { hlsUrl: string } => !!m.hlsUrl).map((m) => m.hlsUrl!)
+    );
+
     return (
       <main
         className="content-fade-in"
@@ -101,6 +130,7 @@ export function CollectionViewer({
           minHeight: isMobile ? 0 : undefined,
         }}
       >
+        {allVideoUrls.length > 0 && <VideoManifestPreloader urls={allVideoUrls} />}
         {data.projects.map((project) => (
           <div key={project._id} style={{ width: '100%', margin: 0, padding: 0 }}>
             {project.media?.map((item, i) => {
@@ -151,16 +181,30 @@ export function CollectionViewer({
                     verticalAlign: 'bottom',
                   };
 
+              const isFirstMedia = project._id === data.projects[0]?._id && i === 0;
+              const isLoaded = loadedMedia[mediaKey];
+
               return (
-                <div key={i} style={containerStyle}>
+                <div
+                  key={i}
+                  style={{
+                    ...containerStyle,
+                    opacity: isLoaded ? 1 : 0,
+                    transition: 'opacity 0.5s ease-out',
+                  }}
+                >
                   {item.mediaType === 'image' && item.imageUrl && (
                     <img
                       src={item.imageUrl}
                       alt=""
                       style={imgStyle}
+                      loading={isFirstMedia ? 'eager' : 'lazy'}
+                      fetchPriority={isFirstMedia ? 'high' : 'auto'}
+                      decoding="async"
                       onLoad={(e) => {
                         const img = e.currentTarget;
                         setMediaAspect(mediaKey, img.naturalWidth, img.naturalHeight);
+                        setMediaLoaded(mediaKey);
                       }}
                     />
                   )}
@@ -174,9 +218,11 @@ export function CollectionViewer({
                     >
                       <HlsVideo
                         src={item.hlsUrl}
+                        priority={isFirstMedia}
                         onLoadedMetadata={(video) =>
                           setMediaAspect(mediaKey, video.videoWidth, video.videoHeight)
                         }
+                        onCanPlay={() => setMediaLoaded(mediaKey)}
                       />
                     </div>
                   )}

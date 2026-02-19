@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "studio": "sanity dev",
     "postinstall": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env.local')){fs.copyFileSync('.env.local.example','.env.local'); console.log('Created .env.local from example')}\"",
     "build": "next build",
