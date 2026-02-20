@@ -2,6 +2,9 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { usePathname } from 'next/navigation';
+import { client } from '@/sanity/lib/client';
+import { COLLECTION_PROJECTS_FOR_ABOUT_QUERY } from '@/sanity/lib/queries';
 
 const INACTIVITY_MS = 10_000;
 const SPIN_ANIMATION_MS = 8_000;
@@ -29,99 +32,149 @@ const MODAL_STYLE = {
   letterSpacing: '0.02em',
 };
 
-const MODAL_CONTENT = (
-  <div
-    className="header-modal-content"
-    style={{
-      width: '70vw',
-      margin: '0 auto',
-      paddingBottom: '70px',
-      ...MODAL_STYLE,
-    }}
-  >
-    <p style={{ textAlign: 'center', marginBottom: '100px' }}>
-      Martina Vimercati, Matteo Viti collaboratively work as a design duo,
-      focusing on research-led web design and development, working primarily
-      across contemporary culture, design, architecture, and food.
-    </p>
+type SelectedProject = {
+  title?: string | null;
+  workType?: string | null;
+  year?: string | null;
+  with?: string | null;
+  link?: string | null;
+};
 
-    <h2
+function formatProjectLine(p: SelectedProject): string {
+  const parts = [p.title, p.workType, p.year, p.with].filter(Boolean);
+  return parts.join(', ');
+}
+
+function ModalContent({ selectedProjects }: { selectedProjects: SelectedProject[] }) {
+  return (
+    <div
+      className="header-modal-content"
       style={{
-        textAlign: 'center',
-        marginTop: '100px',
-        marginBottom: '16px',
+        width: '70vw',
+        margin: '0 auto',
+        paddingBottom: '70px',
         ...MODAL_STYLE,
       }}
     >
-      PRACTICE
-    </h2>
-    <ol className="modal-list-decimal">
-      <li>
-        Through educational paths and professional experiences across different
-        visual disciplines — graphic design, photography, video, and exhibition
-        design — we have developed a practice that integrates different
-        languages and tools, along with the awareness needed to realise a
-        project.
-      </li>
-      <li>
-        Over the past two years, we have focused on web design, working
-        continuously on websites and digital projects and exploring their
-        logics, from design to development.
-      </li>
-      <li>
-        Alongside our studio work, we develop personal projects related to food,
-        as a space for research, experimentation, and collaborative practice.
-      </li>
-    </ol>
+      <p style={{ textAlign: 'center', marginBottom: '100px' }}>
+        Martina Vimercati, Matteo Viti collaboratively work as a design duo,
+        focusing on research-led web design and development, working primarily
+        across contemporary culture, design, architecture, and food.
+      </p>
 
-    <h2
-      style={{
-        textAlign: 'center',
-        marginTop: '100px',
-        marginBottom: '16px',
-        ...MODAL_STYLE,
-      }}
-    >
-      SELECTED PROJECTS
-    </h2>
-    <ol className="modal-list-alpha">
-      <li>Matteo Bogoni, Website, Design & Dev, 2023, w/Neue</li>
-      <li>FAMM, Website, Design, Art Direction & Dev, 2023</li>
-      <li>Matteo Bogoni, Design & Dev, 2023, w/Neue</li>
-      <li>Simone Bonanni, Design, 2024, Matteo Viti, w/Andrea Saccavini</li>
-      <li>Marco Basta, Website, Design & Dev, 2023, w/Neue</li>
-      <li>House Strevi, Website, Design & Dev, 2023</li>
-      <li>Finemateria, Art Direction, 2023</li>
-      <li>Marco Basta, Website, Design & Dev, 2023, w/Neue</li>
-    </ol>
+      <h2
+        style={{
+          textAlign: 'center',
+          marginTop: '100px',
+          marginBottom: '16px',
+          ...MODAL_STYLE,
+        }}
+      >
+        PRACTICE
+      </h2>
+      <ol className="modal-list-decimal">
+        <li>
+          Through educational paths and professional experiences across different
+          visual disciplines — graphic design, photography, video, and exhibition
+          design — we have developed a practice that integrates different
+          languages and tools, along with the awareness needed to realise a
+          project.
+        </li>
+        <li>
+          Over the past two years, we have focused on web design, working
+          continuously on websites and digital projects and exploring their
+          logics, from design to development.
+        </li>
+        <li>
+          Alongside our studio work, we develop personal projects related to food,
+          as a space for research, experimentation, and collaborative practice.
+        </li>
+      </ol>
 
-    <h2
-      style={{
-        textAlign: 'center',
-        marginTop: '100px',
-        marginBottom: '16px',
-        ...MODAL_STYLE,
-      }}
-    >
-      CONTACTS
-    </h2>
-    <p style={{ margin: 0 }}>
-      info@martinavimercati.com, @martinavimercati, +39 3490867743
-      <br />
-      info@matteoviti.com, @vitimatt, +39 3490867743
-    </p>
-  </div>
-);
+      <h2
+        style={{
+          textAlign: 'center',
+          marginTop: '100px',
+          marginBottom: '16px',
+          ...MODAL_STYLE,
+        }}
+      >
+        SELECTED PROJECTS
+      </h2>
+      <ol className="modal-list-alpha">
+        {selectedProjects.map((p, i) => {
+          const content = formatProjectLine(p);
+          const style = {
+            cursor: p.link ? 'pointer' : undefined,
+            transition: 'none' as const,
+          };
+          return (
+            <li
+              key={i}
+              className="about-project-line"
+              data-link={p.link ? 'true' : undefined}
+              style={style}
+              onClick={(e) => {
+                if (p.link) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(p.link, '_blank', 'noopener,noreferrer');
+                }
+              }}
+            >
+              {content}
+            </li>
+          );
+        })}
+      </ol>
+
+      <h2
+        style={{
+          textAlign: 'center',
+          marginTop: '100px',
+          marginBottom: '16px',
+          ...MODAL_STYLE,
+        }}
+      >
+        CONTACTS
+      </h2>
+      <p style={{ margin: 0 }}>
+        info@martinavimercati.com, @martinavimercati, +39 3490867743
+        <br />
+        info@matteoviti.com, @vitimatt, +39 3490867743
+      </p>
+    </div>
+  );
+}
 
 export default function ExpandableHeader() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [sleepMode, setSleepMode] = useState(false);
   const [sleepSvg, setSleepSvg] = useState(1);
+  const [selectedProjects, setSelectedProjects] = useState<SelectedProject[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sleepModeStartRef = useRef<number>(0);
   const spinRef = useRef<HTMLDivElement>(null);
+
+  const pathname = usePathname();
+  const collectionSlug =
+    pathname?.match(/^\/collection\/([^/]+)/)?.[1] ?? null;
+
+  useEffect(() => {
+    if (!collectionSlug) {
+      setSelectedProjects([]);
+      return;
+    }
+    client
+      .fetch<{ projects?: SelectedProject[] } | null>(
+        COLLECTION_PROJECTS_FOR_ABOUT_QUERY,
+        { slug: collectionSlug }
+      )
+      .then((data) => setSelectedProjects(data?.projects ?? []))
+      .catch(() => setSelectedProjects([]));
+  }, [collectionSlug]);
 
   const scheduleDismissOnSideways = useCallback(() => {
     if (dismissTimeoutRef.current) return;
@@ -220,8 +273,16 @@ export default function ExpandableHeader() {
     return () => cancelAnimationFrame(rafId);
   }, [sleepMode]);
 
-  const handleClick = useCallback(() => {
-    if (isOverlayVisible) {
+  const handleOverlayClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isOverlayVisible) {
+        setIsHovered(false);
+        setIsOverlayVisible(true);
+        return;
+      }
+      if ((e.target as HTMLElement).closest('.about-project-line[data-link]')) {
+        return;
+      }
       if (sleepMode) {
         setSleepMode(false);
         if (dismissTimeoutRef.current) {
@@ -230,11 +291,9 @@ export default function ExpandableHeader() {
         }
       }
       setIsOverlayVisible(false);
-    } else {
-      setIsHovered(false);
-      setIsOverlayVisible(true);
-    }
-  }, [isOverlayVisible, sleepMode]);
+    },
+    [isOverlayVisible, sleepMode]
+  );
 
   const shortText = isHovered ? HOVER_TEXT : DEFAULT_TEXT;
 
@@ -277,7 +336,7 @@ export default function ExpandableHeader() {
             cursor: 'pointer',
             pointerEvents: 'auto',
           }}
-          onClick={handleClick}
+          onClick={handleOverlayClick}
         >
           <div
             style={{
@@ -286,7 +345,7 @@ export default function ExpandableHeader() {
               alignItems: 'flex-start',
             }}
           >
-            {MODAL_CONTENT}
+            <ModalContent selectedProjects={selectedProjects} />
           </div>
           {sleepMode &&
             typeof document !== 'undefined' &&
@@ -346,7 +405,10 @@ export default function ExpandableHeader() {
         >
           <span
             style={{ pointerEvents: 'auto', display: 'inline-block' }}
-            onClick={handleClick}
+            onClick={() => {
+              setIsHovered(false);
+              setIsOverlayVisible(true);
+            }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >

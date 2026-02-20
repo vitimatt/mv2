@@ -3,6 +3,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { HlsVideo } from './HlsVideo';
 
+// ~1kB minimal silent MP4 - used to prime Safari for video playback on password submit
+const SAFARI_PRIME_VIDEO =
+  'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAr9tZGF0AAACoAYF//+c3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDEyNSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMTIgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0xIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDM6MHgxMTMgbWU9aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTEgOHg4ZGN0PTEgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIgdGhyZWFkcz02IGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MyBiX3B5cmFtaWQ9MiBiX2FkYXB0PTEgYl9iaWFzPTAgZGlyZWN0PTEgd2VpZ2h0Yj0xIG9wZW5fZ29wPTAgd2VpZ2h0cD0yIGtleWludD0yNTAga2V5aW50X21pbj0yNCBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAAA9liIQAV/0TAAYdeBTXzg8AAALvbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAACoAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAhl0cmFrAAAAXHRraGQAAAAPAAAAAAAAAAAAAAABAAAAAAAAACoAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAgAAAAIAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAAqAAAAAAABAAAAAAGRbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAAAwAAAAAgBVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABPG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAPxzdGJsAAAAmHN0c2QAAAAAAAAAAQAAAIhhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAgACABIAAAASAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGP//AAAAMmF2Y0MBZAAK/+EAGWdkAAqs2V+WXAWyAAADAAIAAAMAYB4kSywBAAZo6+PLIsAAAAAYc3R0cwAAAAAAAAABAAAAAQAAAgAAAAAcc3RzYwAAAAAAAAABAAAAAQAAAAEAAAABAAAAFHN0c3oAAAAAAAACtwAAAAEAAAAUc3RjbwAAAAAAAAABAAAAMAAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNTQuNjMuMTA0';
+
+function primeSafariVideoPlayback() {
+  const video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.src = SAFARI_PRIME_VIDEO;
+  video.play().then(() => video.pause()).catch(() => {});
+}
+
 function VideoManifestPreloader({ urls }: { urls: string[] }) {
   useEffect(() => {
     const ids: ReturnType<typeof setTimeout>[] = [];
@@ -93,6 +105,7 @@ export function CollectionViewer({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    primeSafariVideoPlayback();
     setLoading(true);
     try {
       const res = await fetch(`/api/collection/${slug}/verify`, {
@@ -103,10 +116,8 @@ export function CollectionViewer({
       const json = await res.json();
       if (json.success && json.data) {
         setShowPassword(false);
-        setTimeout(() => {
-          setData(json.data);
-          setShowContent(true);
-        }, 400);
+        setData(json.data);
+        setShowContent(true);
       }
     } catch {
       // Don't do anything on error
@@ -138,11 +149,22 @@ export function CollectionViewer({
           padding: 0,
           overflowX: 'hidden',
           minHeight: isMobile ? 0 : undefined,
+          fontSize: 0,
+          lineHeight: 0,
         }}
       >
         {allVideoUrls.length > 0 && <VideoManifestPreloader urls={allVideoUrls} />}
         {data.projects.map((project) => (
-          <div key={project._id} style={{ width: '100%', margin: 0, padding: 0 }}>
+          <div
+            key={project._id}
+            style={{
+              width: '100%',
+              margin: 0,
+              padding: 0,
+              fontSize: 0,
+              lineHeight: 0,
+            }}
+          >
             {project.media?.map((item, i) => {
               const useMobileAlt =
                 isMobile &&
@@ -156,14 +178,16 @@ export function CollectionViewer({
               const fitMode = useMobileAlt ? (item.mobileFitMode ?? item.fitMode) : item.fitMode;
 
               const mediaKey = useMobileAlt ? `${project._id}-${i}-mobile` : `${project._id}-${i}`;
-              const dims = mediaDimensions[mediaKey];
+              const rawDims = mediaDimensions[mediaKey];
+              const dims =
+                rawDims && rawDims.width > 0 && rawDims.height > 0 ? rawDims : null;
               const isFill = fitMode === 'fill';
               const isVertical = dims ? dims.height > dims.width : false;
-              // For fit mode without dimensions yet (e.g. video before metadata), assume vertical
-              // so we use vh container; avoids "fit" behaving like "fill" on slow/wrong metadata
-              const fitWithoutDims = !isFill && !dims && mediaType === 'video';
+              // For fit mode without valid dimensions (Safari reports 0x0, or metadata not yet loaded),
+              // assume vertical and use vh container; avoids "fit" behaving like "fill"
+              const fitWithoutValidDims = !isFill && !dims && mediaType === 'video';
               const useVhContainer =
-                (!isFill && isVertical && !isMobile) || (fitWithoutDims && !isMobile);
+                (!isFill && isVertical && !isMobile) || (fitWithoutValidDims && !isMobile);
 
               const containerStyle: React.CSSProperties = useVhContainer
                 ? {
@@ -177,12 +201,16 @@ export function CollectionViewer({
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
+                    lineHeight: 0,
+                    fontSize: 0,
                   }
                 : {
                     width: '100%',
                     margin: 0,
                     padding: 0,
+                    display: 'block',
                     lineHeight: 0,
+                    fontSize: 0,
                     overflow: 'hidden',
                     minHeight: 0,
                     ...(dims
@@ -203,7 +231,7 @@ export function CollectionViewer({
                     width: '100%',
                     height: 'auto',
                     display: 'block',
-                    verticalAlign: 'bottom',
+                    verticalAlign: 'top',
                   };
 
               const isFirstMedia = project._id === data.projects[0]?._id && i === 0;
@@ -237,8 +265,8 @@ export function CollectionViewer({
                     <div
                       style={
                         useVhContainer
-                          ? { width: '100%', height: '100%' }
-                          : { width: '100%', lineHeight: 0 }
+                          ? { width: '100%', height: '100%', lineHeight: 0, fontSize: 0 }
+                          : { width: '100%', lineHeight: 0, fontSize: 0 }
                       }
                     >
                       <HlsVideo

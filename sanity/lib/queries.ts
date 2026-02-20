@@ -1,5 +1,17 @@
 import { defineQuery } from 'next-sanity';
 
+export const COLLECTION_PROJECTS_FOR_ABOUT_QUERY = defineQuery(`
+  *[_type == "collection" && slug.current == $slug][0] {
+    "projects": projects[]->{
+      title,
+      workType,
+      year,
+      "with": with,
+      link
+    }
+  }
+`);
+
 export const COLLECTION_BY_SLUG_QUERY = defineQuery(`
   *[_type == "collection" && slug.current == $slug][0] {
     _id,

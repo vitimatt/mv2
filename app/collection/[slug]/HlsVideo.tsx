@@ -79,22 +79,51 @@ export function HlsVideo({
     }
   }, [src, priority]);
 
+  const handleMetadata = (video: HTMLVideoElement) => {
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+      onLoadedMetadata?.(video);
+    }
+  };
+
+  const handleCanPlay = (video: HTMLVideoElement) => {
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+      onLoadedMetadata?.(video);
+    }
+    onCanPlay?.();
+  };
+
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="auto"
-      onLoadedMetadata={(e) => onLoadedMetadata?.(e.currentTarget)}
-      onCanPlay={() => onCanPlay?.()}
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'block',
-        objectFit: 'contain',
-      }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <video
+        ref={videoRef}
+        className="video-no-controls"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        onLoadedMetadata={(e) => handleMetadata(e.currentTarget)}
+        onLoadedData={(e) => handleMetadata(e.currentTarget)}
+        onCanPlay={(e) => handleCanPlay(e.currentTarget)}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          objectFit: 'contain',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Invisible overlay blocks interaction and covers native controls */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2147483647,
+          pointerEvents: 'auto',
+          cursor: 'default',
+        }}
+      />
+    </div>
   );
 }
