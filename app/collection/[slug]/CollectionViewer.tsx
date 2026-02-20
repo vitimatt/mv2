@@ -159,7 +159,11 @@ export function CollectionViewer({
               const dims = mediaDimensions[mediaKey];
               const isFill = fitMode === 'fill';
               const isVertical = dims ? dims.height > dims.width : false;
-              const useVhContainer = !isFill && isVertical && !isMobile;
+              // For fit mode without dimensions yet (e.g. video before metadata), assume vertical
+              // so we use vh container; avoids "fit" behaving like "fill" on slow/wrong metadata
+              const fitWithoutDims = !isFill && !dims && mediaType === 'video';
+              const useVhContainer =
+                (!isFill && isVertical && !isMobile) || (fitWithoutDims && !isMobile);
 
               const containerStyle: React.CSSProperties = useVhContainer
                 ? {

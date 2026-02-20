@@ -16,9 +16,11 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: none;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  touch-action: pan-y;
 }
 
 html::-webkit-scrollbar,
@@ -162,8 +164,8 @@ a:hover {
   .header-center-box,
   .header-modal-content,
   .header-modal-content h2 {
-    font-size: 26px !important;
-    line-height: 31px !important;
+    font-size: 21px !important;
+    line-height: 25px !important;
   }
   .header-center-box,
   .header-modal-content {
