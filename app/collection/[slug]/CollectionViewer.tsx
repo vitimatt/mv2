@@ -164,6 +164,7 @@ export function CollectionViewer({
       >
         {allVideoUrls.length > 0 && <VideoManifestPreloader urls={allVideoUrls} />}
         {cursorLabel &&
+          !isMobile &&
           typeof document !== 'undefined' &&
           createPortal(
             <div

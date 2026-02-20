@@ -30,6 +30,18 @@ body {
   -ms-overflow-style: none;
   touch-action: pan-y;
   overscroll-behavior: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Chrome mobile address bar stays visible when scrolling inside a div (not document).
+   Add extra bottom padding on mobile so content isn't hidden behind the bar. */
+@media (max-width: 768px) {
+  .scroll-root {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  }
+  .about-overlay {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom) + 80px) !important;
+  }
 }
 
 .scroll-root::-webkit-scrollbar {

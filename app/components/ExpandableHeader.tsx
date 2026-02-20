@@ -20,7 +20,7 @@ function pickRandomSleepSvg(exclude?: number) {
 
 const SIDEWAYS_INTERVAL_MS = SPIN_ANIMATION_MS / 2;
 
-const DEFAULT_TEXT = 'Martina Vimercati, Matteo Viti.';
+const DEFAULT_TEXT = 'Martina Vimercati, Matteo Viti';
 const HOVER_TEXT =
   'Martina Vimercati, Matteo Viti collaboratively work as a design duo, focusing on research-led web design and development, working primarily across contemporary culture, design, architecture, and food.';
 
@@ -77,7 +77,7 @@ function ModalContent({
       style={{
         width: '70vw',
         margin: '0 auto',
-        paddingBottom: '70px',
+        paddingBottom: 'calc(70px + env(safe-area-inset-bottom))',
         ...MODAL_STYLE,
       }}
     >
@@ -450,7 +450,7 @@ export default function ExpandableHeader() {
     >
       {isOverlayVisible ? (
         <div
-          className={`scrollbar-hide ${sleepMode ? 'sleep-mode-active' : ''}`}
+          className={`scrollbar-hide about-overlay ${sleepMode ? 'sleep-mode-active' : ''}`}
           style={{
             position: 'fixed',
             inset: 0,
@@ -464,7 +464,7 @@ export default function ExpandableHeader() {
             overscrollBehavior: 'none',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y',
-            padding: '20px 0',
+            padding: '20px 0 calc(20px + env(safe-area-inset-bottom)) 0',
             boxSizing: 'border-box',
             color: '#000',
             cursor: 'default',
