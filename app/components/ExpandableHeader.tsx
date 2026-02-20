@@ -226,8 +226,8 @@ function ModalContent({
           @martina_vimercati
         </a>
         ,{' '}
-        <a href="tel:+393490867743" className="about-contact-link">
-          +39 3490867743
+        <a href="tel:+393927490465" className="about-contact-link">
+          +39 3927490465
         </a>
         <br />
         Matteo Viti,{' '}
