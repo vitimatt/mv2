@@ -16,7 +16,18 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ExpandableHeader />
-        {children}
+        <div
+          className="scroll-root"
+          style={{
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            height: '100vh',
+            overscrollBehavior: 'none',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -262,7 +262,7 @@ export function CollectionViewer({
 
   return (
     <main
-      className="password-fade-in"
+      className="password-fade-in password-form"
       style={{
         minHeight: '100vh',
         display: 'flex',

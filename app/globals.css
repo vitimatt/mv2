@@ -12,19 +12,27 @@
   margin: 0;
 }
 
-html,
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   max-width: 100vw;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: none;
+  height: 100%;
+  margin: 0;
+}
+
+.scroll-root {
   scrollbar-width: none;
   -ms-overflow-style: none;
   touch-action: pan-y;
+  overscroll-behavior: none;
 }
 
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
+.scroll-root::-webkit-scrollbar {
   display: none;
 }
 
@@ -163,7 +171,9 @@ a:hover {
 @media (max-width: 768px) {
   .header-center-box,
   .header-modal-content,
-  .header-modal-content h2 {
+  .header-modal-content h2,
+  .password-form form span,
+  .password-form form button {
     font-size: 21px !important;
     line-height: 25px !important;
   }

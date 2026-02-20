@@ -268,6 +268,7 @@ export default function ExpandableHeader() {
             backgroundColor: '#fff',
             overflowY: 'auto',
             overflowX: 'hidden',
+            overscrollBehavior: 'none',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y',
             padding: '20px 0',
