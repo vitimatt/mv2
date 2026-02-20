@@ -340,13 +340,17 @@ export default function ExpandableHeader() {
             letterSpacing: '0.02em',
             textAlign: 'center',
             cursor: 'pointer',
-            pointerEvents: 'auto',
+            pointerEvents: 'none',
           }}
-          onClick={handleClick}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
         >
-          {shortText}
+          <span
+            style={{ pointerEvents: 'auto', display: 'inline-block' }}
+            onClick={handleClick}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {shortText}
+          </span>
         </div>
       )}
     </div>
