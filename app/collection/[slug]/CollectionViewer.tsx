@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { HlsVideo } from './HlsVideo';
 
 // ~1kB minimal silent MP4 - used to prime Safari for video playback on password submit
@@ -84,6 +85,8 @@ export function CollectionViewer({
   >({});
   const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
   const [isMobile, setIsMobile] = useState(false);
+  const [cursorLabel, setCursorLabel] = useState<string | null>(null);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -130,6 +133,12 @@ export function CollectionViewer({
     inputRef.current?.focus();
   };
 
+  const stripProtocol = (url: string) =>
+    url
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/$/, '');
+
   if (data && showContent) {
     const allVideoUrls = data.projects.flatMap((p) =>
       (p.media ?? []).flatMap((m) => {
@@ -154,6 +163,30 @@ export function CollectionViewer({
         }}
       >
         {allVideoUrls.length > 0 && <VideoManifestPreloader urls={allVideoUrls} />}
+        {cursorLabel &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <div
+              style={{
+                position: 'fixed',
+                left: cursorPos.x + 20,
+                top: cursorPos.y,
+                fontFamily: "'ABCDiatype', sans-serif",
+                fontWeight: 500,
+              fontSize: '15px',
+              lineHeight: '19px',
+                letterSpacing: '0.02em',
+                color: '#fff',
+                mixBlendMode: 'difference',
+                pointerEvents: 'none',
+                zIndex: 2147483647,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {cursorLabel}
+            </div>,
+            document.body
+          )}
         {data.projects.map((project) => (
           <div
             key={project._id}
@@ -250,7 +283,9 @@ export function CollectionViewer({
                     <img
                       src={imageUrl}
                       alt=""
-                      style={imgStyle}
+                      style={{
+                        ...imgStyle,
+                      }}
                       loading={isFirstMedia ? 'eager' : 'lazy'}
                       fetchPriority={isFirstMedia ? 'high' : 'auto'}
                       decoding="async"
@@ -259,13 +294,35 @@ export function CollectionViewer({
                         setMediaAspect(mediaKey, img.naturalWidth, img.naturalHeight);
                         setMediaLoaded(mediaKey);
                       }}
+                      onClick={() => {
+                        if (project.link) {
+                          window.open(project.link, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      onMouseEnter={() => {
+                        if (project.link) setCursorLabel(stripProtocol(project.link));
+                      }}
+                      onMouseMove={(e) => {
+                        if (project.link) setCursorPos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseLeave={() => setCursorLabel(null)}
                     />
                   )}
                   {mediaType === 'video' && hlsUrl && (
                     <div
                       style={
                         useVhContainer
-                          ? { width: '100%', height: '100%', lineHeight: 0, fontSize: 0 }
+                          ? {
+                              width: dims ? 'auto' : '100%',
+                              height: dims ? 'auto' : '100%',
+                              maxWidth: '100%',
+                              maxHeight: '100vh',
+                              ...(dims && {
+                                aspectRatio: `${dims.width} / ${dims.height}`,
+                              }),
+                              lineHeight: 0,
+                              fontSize: 0,
+                            }
                           : { width: '100%', lineHeight: 0, fontSize: 0 }
                       }
                     >
@@ -276,6 +333,17 @@ export function CollectionViewer({
                           setMediaAspect(mediaKey, video.videoWidth, video.videoHeight)
                         }
                         onCanPlay={() => setMediaLoaded(mediaKey)}
+                        link={project.link}
+                        onMouseEnter={() => {
+                          if (project.link) setCursorLabel(stripProtocol(project.link));
+                        }}
+                        onMouseMove={(e) => {
+                          if (project.link) setCursorPos({ x: e.clientX, y: e.clientY });
+                        }}
+                        onMouseLeave={() => setCursorLabel(null)}
+                        onClick={() => {
+                          if (project.link) window.open(project.link, '_blank', 'noopener,noreferrer');
+                        }}
                       />
                     </div>
                   )}

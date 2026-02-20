@@ -101,8 +101,17 @@ a:hover {
   left: 0;
 }
 
-.about-project-line:hover {
-  color: red;
+.about-project-line-hover {
+  text-decoration: underline;
+}
+
+.about-contact-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.about-contact-link:hover {
+  text-decoration: underline;
 }
 
 /* Force-hide Safari video controls (autoplay/loop videos, no user controls) */

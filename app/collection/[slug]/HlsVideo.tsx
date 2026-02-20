@@ -8,11 +8,21 @@ export function HlsVideo({
   priority = false,
   onLoadedMetadata,
   onCanPlay,
+  link,
+  onMouseEnter,
+  onMouseMove,
+  onMouseLeave,
+  onClick,
 }: {
   src: string;
   priority?: boolean;
   onLoadedMetadata?: (video: HTMLVideoElement) => void;
   onCanPlay?: () => void;
+  link?: string;
+  onMouseEnter?: () => void;
+  onMouseMove?: (e: React.MouseEvent) => void;
+  onMouseLeave?: () => void;
+  onClick?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -113,7 +123,7 @@ export function HlsVideo({
           pointerEvents: 'none',
         }}
       />
-      {/* Invisible overlay blocks interaction and covers native controls */}
+      {/* Overlay blocks native controls and handles hover/click for project links */}
       <div
         aria-hidden
         style={{
@@ -123,6 +133,10 @@ export function HlsVideo({
           pointerEvents: 'auto',
           cursor: 'default',
         }}
+        onMouseEnter={onMouseEnter}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
       />
     </div>
   );

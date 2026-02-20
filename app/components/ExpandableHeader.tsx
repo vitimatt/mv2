@@ -32,12 +32,19 @@ const MODAL_STYLE = {
   letterSpacing: '0.02em',
 };
 
+type FirstMedia = {
+  mediaType?: string | null;
+  imageUrl?: string | null;
+  hlsUrl?: string | null;
+};
+
 type SelectedProject = {
   title?: string | null;
   workType?: string | null;
   year?: string | null;
   with?: string | null;
   link?: string | null;
+  firstMedia?: FirstMedia | null;
 };
 
 function formatProjectLine(p: SelectedProject): string {
@@ -45,7 +52,25 @@ function formatProjectLine(p: SelectedProject): string {
   return parts.join(', ');
 }
 
-function ModalContent({ selectedProjects }: { selectedProjects: SelectedProject[] }) {
+function ModalContent({
+  selectedProjects,
+  hoverPreview,
+  hoveredProject,
+  cursorX,
+  cursorY,
+  onProjectHoverEnter,
+  onProjectMouseMove,
+  onProjectLeave,
+}: {
+  selectedProjects: SelectedProject[];
+  hoverPreview: FirstMedia | null;
+  hoveredProject: SelectedProject | null;
+  cursorX: number;
+  cursorY: number;
+  onProjectHoverEnter: (p: SelectedProject) => void;
+  onProjectMouseMove: (e: React.MouseEvent) => void;
+  onProjectLeave: () => void;
+}) {
   return (
     <div
       className="header-modal-content"
@@ -101,18 +126,58 @@ function ModalContent({ selectedProjects }: { selectedProjects: SelectedProject[
       >
         SELECTED PROJECTS
       </h2>
+      {hoverPreview && (
+        <div
+          style={{
+            position: 'fixed',
+            left: cursorX + 10,
+            top: cursorY,
+            width: 200,
+            zIndex: 10000,
+            pointerEvents: 'none',
+          }}
+        >
+          {hoverPreview.mediaType === 'image' && hoverPreview.imageUrl ? (
+            <img
+              src={hoverPreview.imageUrl}
+              alt=""
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                objectFit: 'cover',
+              }}
+            />
+          ) : hoverPreview.mediaType === 'video' && hoverPreview.hlsUrl ? (
+            <video
+              src={hoverPreview.hlsUrl}
+              muted
+              autoPlay
+              playsInline
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                objectFit: 'cover',
+              }}
+            />
+          ) : null}
+        </div>
+      )}
       <ol className="modal-list-alpha">
         {selectedProjects.map((p, i) => {
           const content = formatProjectLine(p);
+          const isHovered = hoveredProject === p;
           const style = {
-            cursor: p.link ? 'pointer' : undefined,
+            cursor: 'default' as const,
             transition: 'none' as const,
           };
           return (
             <li
               key={i}
-              className="about-project-line"
+              className={`about-project-line${isHovered ? ' about-project-line-hover' : ''}`}
               data-link={p.link ? 'true' : undefined}
+              data-index={i}
               style={style}
               onClick={(e) => {
                 if (p.link) {
@@ -121,6 +186,9 @@ function ModalContent({ selectedProjects }: { selectedProjects: SelectedProject[
                   window.open(p.link, '_blank', 'noopener,noreferrer');
                 }
               }}
+              onMouseEnter={() => onProjectHoverEnter(p)}
+              onMouseMove={onProjectMouseMove}
+              onMouseLeave={onProjectLeave}
             >
               {content}
             </li>
@@ -139,9 +207,42 @@ function ModalContent({ selectedProjects }: { selectedProjects: SelectedProject[
         CONTACTS
       </h2>
       <p style={{ margin: 0 }}>
-        info@martinavimercati.com, @martinavimercati, +39 3490867743
+        <a
+          href="mailto:info@mv-mv.com"
+          className="about-contact-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          info@mv-mv.com
+        </a>
         <br />
-        info@matteoviti.com, @vitimatt, +39 3490867743
+        Martina Vimercati,{' '}
+        <a
+          href="https://instagram.com/martina_vimercati"
+          className="about-contact-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          @martina_vimercati
+        </a>
+        ,{' '}
+        <a href="tel:+393490867743" className="about-contact-link">
+          +39 3490867743
+        </a>
+        <br />
+        Matteo Viti,{' '}
+        <a
+          href="https://instagram.com/vitimatt"
+          className="about-contact-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          @vitimatt
+        </a>
+        ,{' '}
+        <a href="tel:+393490867743" className="about-contact-link">
+          +39 3490867743
+        </a>
       </p>
     </div>
   );
@@ -153,10 +254,15 @@ export default function ExpandableHeader() {
   const [sleepMode, setSleepMode] = useState(false);
   const [sleepSvg, setSleepSvg] = useState(1);
   const [selectedProjects, setSelectedProjects] = useState<SelectedProject[]>([]);
+  const [hoverPreview, setHoverPreview] = useState<FirstMedia | null>(null);
+  const [hoveredProject, setHoveredProject] = useState<SelectedProject | null>(null);
+  const [cursorX, setCursorX] = useState(0);
+  const [cursorY, setCursorY] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sleepModeStartRef = useRef<number>(0);
   const spinRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef({ x: 0, y: 0 });
 
   const pathname = usePathname();
   const collectionSlug =
@@ -214,6 +320,8 @@ export default function ExpandableHeader() {
 
   useEffect(() => {
     if (!isOverlayVisible) {
+      setHoverPreview(null);
+      setHoveredProject(null);
       setSleepMode(false);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -273,6 +381,29 @@ export default function ExpandableHeader() {
     return () => cancelAnimationFrame(rafId);
   }, [sleepMode]);
 
+  const updateHoverFromCursor = useCallback(
+    (x: number, y: number) => {
+      cursorRef.current = { x, y };
+      const el = document.elementFromPoint(x, y);
+      const line = el?.closest?.('.about-project-line');
+      if (line) {
+        const idx = line.getAttribute('data-index');
+        if (idx != null) {
+          const i = parseInt(idx, 10);
+          const p = selectedProjects[i];
+          if (p) {
+            setHoveredProject(p);
+            p.firstMedia && setHoverPreview(p.firstMedia);
+            return;
+          }
+        }
+      }
+      setHoverPreview(null);
+      setHoveredProject(null);
+    },
+    [selectedProjects]
+  );
+
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
       if (!isOverlayVisible) {
@@ -281,6 +412,9 @@ export default function ExpandableHeader() {
         return;
       }
       if ((e.target as HTMLElement).closest('.about-project-line[data-link]')) {
+        return;
+      }
+      if ((e.target as HTMLElement).closest('.about-contact-link')) {
         return;
       }
       if (sleepMode) {
@@ -333,10 +467,18 @@ export default function ExpandableHeader() {
             padding: '20px 0',
             boxSizing: 'border-box',
             color: '#000',
-            cursor: 'pointer',
+            cursor: 'default',
             pointerEvents: 'auto',
           }}
           onClick={handleOverlayClick}
+          onMouseMove={(e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            setCursorX(x);
+            setCursorY(y);
+            updateHoverFromCursor(x, y);
+          }}
+          onScroll={() => updateHoverFromCursor(cursorRef.current.x, cursorRef.current.y)}
         >
           <div
             style={{
@@ -345,7 +487,28 @@ export default function ExpandableHeader() {
               alignItems: 'flex-start',
             }}
           >
-            <ModalContent selectedProjects={selectedProjects} />
+            <ModalContent
+              selectedProjects={selectedProjects}
+              hoverPreview={hoverPreview}
+              hoveredProject={hoveredProject}
+              cursorX={cursorX}
+              cursorY={cursorY}
+              onProjectHoverEnter={(p) => {
+                setHoveredProject(p);
+                p.firstMedia && setHoverPreview(p.firstMedia);
+              }}
+              onProjectMouseMove={(e) => {
+                const x = e.clientX;
+                const y = e.clientY;
+                setCursorX(x);
+                setCursorY(y);
+                updateHoverFromCursor(x, y);
+              }}
+              onProjectLeave={() => {
+                setHoverPreview(null);
+                setHoveredProject(null);
+              }}
+            />
           </div>
           {sleepMode &&
             typeof document !== 'undefined' &&
