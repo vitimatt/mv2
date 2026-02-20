@@ -34,6 +34,12 @@ export async function POST(
           mediaType: string;
           imageUrl?: string;
           hlsUrl?: string;
+          fitMode?: string;
+          useMobileAlternative?: boolean;
+          mobileMediaType?: string;
+          mobileImageUrl?: string;
+          mobileHlsUrl?: string;
+          mobileFitMode?: string;
         }>;
       }>;
     } | null>(COLLECTION_WITH_PROJECTS_QUERY, { slug });

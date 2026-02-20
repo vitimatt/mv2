@@ -31,6 +31,11 @@ type Project = {
     imageUrl?: string;
     hlsUrl?: string;
     fitMode?: 'fit' | 'fill';
+    useMobileAlternative?: boolean;
+    mobileMediaType?: string;
+    mobileImageUrl?: string;
+    mobileHlsUrl?: string;
+    mobileFitMode?: 'fit' | 'fill';
   }>;
 };
 
@@ -116,7 +121,12 @@ export function CollectionViewer({
 
   if (data && showContent) {
     const allVideoUrls = data.projects.flatMap((p) =>
-      (p.media ?? []).filter((m): m is typeof m & { hlsUrl: string } => !!m.hlsUrl).map((m) => m.hlsUrl!)
+      (p.media ?? []).flatMap((m) => {
+        const urls: string[] = [];
+        if (m.hlsUrl) urls.push(m.hlsUrl);
+        if (m.useMobileAlternative && m.mobileHlsUrl) urls.push(m.mobileHlsUrl);
+        return urls;
+      })
     );
 
     return (
@@ -134,9 +144,20 @@ export function CollectionViewer({
         {data.projects.map((project) => (
           <div key={project._id} style={{ width: '100%', margin: 0, padding: 0 }}>
             {project.media?.map((item, i) => {
-              const mediaKey = `${project._id}-${i}`;
+              const useMobileAlt =
+                isMobile &&
+                item.useMobileAlternative &&
+                ((item.mobileMediaType === 'image' && item.mobileImageUrl) ||
+                  (item.mobileMediaType === 'video' && item.mobileHlsUrl));
+
+              const mediaType = useMobileAlt ? item.mobileMediaType! : item.mediaType;
+              const imageUrl = useMobileAlt ? item.mobileImageUrl : item.imageUrl;
+              const hlsUrl = useMobileAlt ? item.mobileHlsUrl : item.hlsUrl;
+              const fitMode = useMobileAlt ? (item.mobileFitMode ?? item.fitMode) : item.fitMode;
+
+              const mediaKey = useMobileAlt ? `${project._id}-${i}-mobile` : `${project._id}-${i}`;
               const dims = mediaDimensions[mediaKey];
-              const isFill = item.fitMode === 'fill';
+              const isFill = fitMode === 'fill';
               const isVertical = dims ? dims.height > dims.width : false;
               const useVhContainer = !isFill && isVertical && !isMobile;
 
@@ -162,7 +183,7 @@ export function CollectionViewer({
                     minHeight: 0,
                     ...(dims
                       ? { aspectRatio: `${dims.width} / ${dims.height}` }
-                      : item.mediaType === 'video' && { aspectRatio: '16 / 9' }),
+                      : mediaType === 'video' && { aspectRatio: '16 / 9' }),
                   };
 
               const imgStyle: React.CSSProperties = useVhContainer
@@ -193,9 +214,9 @@ export function CollectionViewer({
                     transition: 'opacity 0.5s ease-out',
                   }}
                 >
-                  {item.mediaType === 'image' && item.imageUrl && (
+                  {mediaType === 'image' && imageUrl && (
                     <img
-                      src={item.imageUrl}
+                      src={imageUrl}
                       alt=""
                       style={imgStyle}
                       loading={isFirstMedia ? 'eager' : 'lazy'}
@@ -208,7 +229,7 @@ export function CollectionViewer({
                       }}
                     />
                   )}
-                  {item.mediaType === 'video' && item.hlsUrl && (
+                  {mediaType === 'video' && hlsUrl && (
                     <div
                       style={
                         useVhContainer
@@ -217,7 +238,7 @@ export function CollectionViewer({
                       }
                     >
                       <HlsVideo
-                        src={item.hlsUrl}
+                        src={hlsUrl}
                         priority={isFirstMedia}
                         onLoadedMetadata={(video) =>
                           setMediaAspect(mediaKey, video.videoWidth, video.videoHeight)

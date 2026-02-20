@@ -24,7 +24,12 @@ export const COLLECTION_WITH_PROJECTS_QUERY = defineQuery(`
         mediaType,
         "imageUrl": image.asset->url,
         hlsUrl,
-        fitMode
+        fitMode,
+        useMobileAlternative,
+        mobileMediaType,
+        "mobileImageUrl": mobileImage.asset->url,
+        mobileHlsUrl,
+        mobileFitMode
       }
     }
   }

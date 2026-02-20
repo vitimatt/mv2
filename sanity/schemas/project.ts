@@ -46,6 +46,55 @@ export const mediaItemType = defineType({
         'Fit: vertical content fits inside 100vh viewport. Fill: content fills the width at its natural height (no cropping).',
       initialValue: 'fit',
     }),
+    defineField({
+      name: 'useMobileAlternative',
+      title: 'Mobile alternative',
+      type: 'boolean',
+      description: 'Show different image/video on mobile devices',
+      initialValue: false,
+    }),
+    defineField({
+      name: 'mobileMediaType',
+      title: 'Type',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Image', value: 'image' },
+          { title: 'Video (HLS)', value: 'video' },
+        ],
+        layout: 'radio',
+      },
+      hidden: ({ parent }) => !parent?.useMobileAlternative,
+    }),
+    defineField({
+      name: 'mobileImage',
+      title: 'Image',
+      type: 'image',
+      hidden: ({ parent }) => !parent?.useMobileAlternative || parent?.mobileMediaType !== 'image',
+    }),
+    defineField({
+      name: 'mobileHlsUrl',
+      title: 'HLS Playlist URL',
+      type: 'url',
+      description: 'URL to .m3u8 HLS playlist',
+      hidden: ({ parent }) => !parent?.useMobileAlternative || parent?.mobileMediaType !== 'video',
+    }),
+    defineField({
+      name: 'mobileFitMode',
+      title: 'Display',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Fit', value: 'fit' },
+          { title: 'Fill', value: 'fill' },
+        ],
+        layout: 'radio',
+      },
+      description:
+        'Fit: vertical content fits inside 100vh viewport. Fill: content fills the width at its natural height (no cropping).',
+      initialValue: 'fit',
+      hidden: ({ parent }) => !parent?.useMobileAlternative,
+    }),
   ],
   preview: {
     select: {
