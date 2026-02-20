@@ -22,18 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ExpandableHeader />
-        <div
-          className="scroll-root"
-          style={{
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            height: '100dvh',
-            minHeight: '100vh',
-            overscrollBehavior: 'none',
-            WebkitOverflowScrolling: 'touch',
-            boxSizing: 'border-box',
-          }}
-        >
+        <div className="scroll-root">
           {children}
         </div>
       </body>

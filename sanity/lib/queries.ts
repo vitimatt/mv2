@@ -8,10 +8,9 @@ export const COLLECTION_PROJECTS_FOR_ABOUT_QUERY = defineQuery(`
       year,
       "with": with,
       link,
-      "firstMedia": media[0]{
+      "firstImage": media[mediaType == "image"][0]{
         mediaType,
-        "imageUrl": image.asset->url,
-        hlsUrl
+        "imageUrl": image.asset->url
       }
     }
   }

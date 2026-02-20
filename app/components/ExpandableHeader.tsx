@@ -32,10 +32,9 @@ const MODAL_STYLE = {
   letterSpacing: '0.02em',
 };
 
-type FirstMedia = {
+type FirstImage = {
   mediaType?: string | null;
   imageUrl?: string | null;
-  hlsUrl?: string | null;
 };
 
 type SelectedProject = {
@@ -44,7 +43,7 @@ type SelectedProject = {
   year?: string | null;
   with?: string | null;
   link?: string | null;
-  firstMedia?: FirstMedia | null;
+  firstImage?: FirstImage | null;
 };
 
 function formatProjectLine(p: SelectedProject): string {
@@ -63,7 +62,7 @@ function ModalContent({
   onProjectLeave,
 }: {
   selectedProjects: SelectedProject[];
-  hoverPreview: FirstMedia | null;
+  hoverPreview: FirstImage | null;
   hoveredProject: SelectedProject | null;
   cursorX: number;
   cursorY: number;
@@ -126,7 +125,7 @@ function ModalContent({
       >
         SELECTED PROJECTS
       </h2>
-      {hoverPreview && (
+      {hoverPreview?.imageUrl && (
         <div
           style={{
             position: 'fixed',
@@ -137,31 +136,16 @@ function ModalContent({
             pointerEvents: 'none',
           }}
         >
-          {hoverPreview.mediaType === 'image' && hoverPreview.imageUrl ? (
-            <img
-              src={hoverPreview.imageUrl}
-              alt=""
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                objectFit: 'cover',
-              }}
-            />
-          ) : hoverPreview.mediaType === 'video' && hoverPreview.hlsUrl ? (
-            <video
-              src={hoverPreview.hlsUrl}
-              muted
-              autoPlay
-              playsInline
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                objectFit: 'cover',
-              }}
-            />
-          ) : null}
+          <img
+            src={hoverPreview.imageUrl}
+            alt=""
+            style={{
+              width: '100%',
+              height: 'auto',
+              display: 'block',
+              objectFit: 'cover',
+            }}
+          />
         </div>
       )}
       <ol className="modal-list-alpha">
@@ -254,7 +238,7 @@ export default function ExpandableHeader() {
   const [sleepMode, setSleepMode] = useState(false);
   const [sleepSvg, setSleepSvg] = useState(1);
   const [selectedProjects, setSelectedProjects] = useState<SelectedProject[]>([]);
-  const [hoverPreview, setHoverPreview] = useState<FirstMedia | null>(null);
+  const [hoverPreview, setHoverPreview] = useState<FirstImage | null>(null);
   const [hoveredProject, setHoveredProject] = useState<SelectedProject | null>(null);
   const [cursorX, setCursorX] = useState(0);
   const [cursorY, setCursorY] = useState(0);
@@ -393,7 +377,7 @@ export default function ExpandableHeader() {
           const p = selectedProjects[i];
           if (p) {
             setHoveredProject(p);
-            p.firstMedia && setHoverPreview(p.firstMedia);
+            p.firstImage && setHoverPreview(p.firstImage);
             return;
           }
         }
@@ -495,7 +479,7 @@ export default function ExpandableHeader() {
               cursorY={cursorY}
               onProjectHoverEnter={(p) => {
                 setHoveredProject(p);
-                p.firstMedia && setHoverPreview(p.firstMedia);
+                p.firstImage && setHoverPreview(p.firstImage);
               }}
               onProjectMouseMove={(e) => {
                 const x = e.clientX;
