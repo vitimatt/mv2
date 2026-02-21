@@ -76,7 +76,7 @@ function ModalContent({
       style={{
         width: '70vw',
         margin: '0 auto',
-        paddingBottom: 'calc(70px + env(safe-area-inset-bottom))',
+        paddingBottom: 'env(safe-area-inset-bottom)',
         ...MODAL_STYLE,
       }}
     >
@@ -190,7 +190,7 @@ function ModalContent({
       >
         CONTACTS
       </h2>
-      <p style={{ margin: 0 }}>
+      <p style={{ margin: 0, marginBottom: '40px' }}>
         <a
           href="mailto:info@mv-mv.com"
           className="about-contact-link"
@@ -232,9 +232,13 @@ function ModalContent({
   );
 }
 
+const MOBILE_BREAKPOINT = 768;
+
 export default function ExpandableHeader() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
   const [sleepMode, setSleepMode] = useState(false);
   const [sleepSvg, setSleepSvg] = useState(1);
   const [selectedProjects, setSelectedProjects] = useState<SelectedProject[]>([]);
@@ -247,6 +251,28 @@ export default function ExpandableHeader() {
   const sleepModeStartRef = useRef<number>(0);
   const spinRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const check = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    if (isOverlayVisible && isMobile) {
+      document.body.classList.add('about-open');
+      window.scrollTo(0, 0);
+      const id = requestAnimationFrame(() => setPortalReady(true));
+      return () => {
+        cancelAnimationFrame(id);
+        document.body.classList.remove('about-open');
+      };
+    } else {
+      document.body.classList.remove('about-open');
+      setPortalReady(false);
+    }
+  }, [isOverlayVisible, isMobile]);
 
   const pathname = usePathname();
   const collectionSlug =
@@ -433,107 +459,158 @@ export default function ExpandableHeader() {
       }}
     >
       {isOverlayVisible ? (
-        <div
-          className={`scrollbar-hide about-overlay ${sleepMode ? 'sleep-mode-active' : ''}`}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            width: '100vw',
-            height: '100dvh',
-            minHeight: '100vh',
-            maxHeight: '100dvh',
-            backgroundColor: '#fff',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            overscrollBehavior: 'none',
-            WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-y',
-            padding: '20px 0 calc(20px + env(safe-area-inset-bottom)) 0',
-            boxSizing: 'border-box',
-            color: '#000',
-            cursor: 'default',
-            pointerEvents: 'auto',
-          }}
-          onClick={handleOverlayClick}
-          onMouseMove={(e) => {
-            const x = e.clientX;
-            const y = e.clientY;
-            setCursorX(x);
-            setCursorY(y);
-            updateHoverFromCursor(x, y);
-          }}
-          onScroll={() => updateHoverFromCursor(cursorRef.current.x, cursorRef.current.y)}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-            }}
-          >
-            <ModalContent
-              selectedProjects={selectedProjects}
-              hoverPreview={hoverPreview}
-              hoveredProject={hoveredProject}
-              cursorX={cursorX}
-              cursorY={cursorY}
-              onProjectHoverEnter={(p) => {
-                setHoveredProject(p);
-                p.firstImage && setHoverPreview(p.firstImage);
-              }}
-              onProjectMouseMove={(e) => {
-                const x = e.clientX;
-                const y = e.clientY;
-                setCursorX(x);
-                setCursorY(y);
-                updateHoverFromCursor(x, y);
-              }}
-              onProjectLeave={() => {
-                setHoverPreview(null);
-                setHoveredProject(null);
-              }}
-            />
-          </div>
-          {sleepMode &&
-            typeof document !== 'undefined' &&
-            createPortal(
+        isMobile ? (
+          typeof document !== 'undefined' &&
+          portalReady &&
+          (() => {
+            const scrollRoot = document.querySelector('.scroll-root');
+            if (!scrollRoot) return null;
+            return createPortal(
               <div
-                className="sleep-mode-overlay"
+                data-about-content
+                className={`scrollbar-hide about-overlay ${sleepMode ? 'sleep-mode-active' : ''}`}
                 style={{
-                  position: 'fixed',
-                  inset: 0,
+                  minHeight: '100dvh',
+                  backgroundColor: '#fff',
+                  padding: '20px 0 env(safe-area-inset-bottom) 0',
+                  boxSizing: 'border-box',
+                  color: '#000',
+                  cursor: 'default',
                   display: 'flex',
                   justifyContent: 'center',
-                  alignItems: 'center',
-                  perspective: 600,
-                  transformStyle: 'preserve-3d',
-                  pointerEvents: 'none',
-                  zIndex: 1001,
+                  alignItems: 'flex-start',
                 }}
+                onClick={handleOverlayClick}
               >
-                <div ref={spinRef} className="sleep-mode-spin">
-                  <div
-                    className="sleep-mode-face"
-                    style={{
-                      background: '#000000',
-                      WebkitMask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
-                      mask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
-                    }}
-                  />
-                  <div
-                    className="sleep-mode-face sleep-mode-face-back"
-                    style={{
-                      background: '#000000',
-                      WebkitMask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
-                      mask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
-                    }}
-                  />
-                </div>
+                <ModalContent
+                  selectedProjects={selectedProjects}
+                  hoverPreview={hoverPreview}
+                  hoveredProject={hoveredProject}
+                  cursorX={cursorX}
+                  cursorY={cursorY}
+                  onProjectHoverEnter={(p) => {
+                    setHoveredProject(p);
+                    p.firstImage && setHoverPreview(p.firstImage);
+                  }}
+                  onProjectMouseMove={(e) => {
+                    const x = e.clientX;
+                    const y = e.clientY;
+                    setCursorX(x);
+                    setCursorY(y);
+                    updateHoverFromCursor(x, y);
+                  }}
+                  onProjectLeave={() => {
+                    setHoverPreview(null);
+                    setHoveredProject(null);
+                  }}
+                />
               </div>,
-              document.body
-            )}
-        </div>
-      ) : (
+              scrollRoot
+            );
+          })()
+        ) : (
+          <div
+            className={`scrollbar-hide about-overlay ${sleepMode ? 'sleep-mode-active' : ''}`}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              width: '100vw',
+              height: '100dvh',
+              minHeight: '100vh',
+              maxHeight: '100dvh',
+              backgroundColor: '#fff',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'none',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
+              padding: '20px 0 env(safe-area-inset-bottom) 0',
+              boxSizing: 'border-box',
+              color: '#000',
+              cursor: 'default',
+              pointerEvents: 'auto',
+            }}
+            onClick={handleOverlayClick}
+            onMouseMove={(e) => {
+              const x = e.clientX;
+              const y = e.clientY;
+              setCursorX(x);
+              setCursorY(y);
+              updateHoverFromCursor(x, y);
+            }}
+            onScroll={() => updateHoverFromCursor(cursorRef.current.x, cursorRef.current.y)}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+              }}
+            >
+              <ModalContent
+                selectedProjects={selectedProjects}
+                hoverPreview={hoverPreview}
+                hoveredProject={hoveredProject}
+                cursorX={cursorX}
+                cursorY={cursorY}
+                onProjectHoverEnter={(p) => {
+                  setHoveredProject(p);
+                  p.firstImage && setHoverPreview(p.firstImage);
+                }}
+                onProjectMouseMove={(e) => {
+                  const x = e.clientX;
+                  const y = e.clientY;
+                  setCursorX(x);
+                  setCursorY(y);
+                  updateHoverFromCursor(x, y);
+                }}
+                onProjectLeave={() => {
+                  setHoverPreview(null);
+                  setHoveredProject(null);
+                }}
+              />
+            </div>
+          </div>
+        )
+      ) : null}
+      {isOverlayVisible && sleepMode && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="sleep-mode-overlay"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              perspective: 600,
+              transformStyle: 'preserve-3d',
+              pointerEvents: 'none',
+              zIndex: 1001,
+            }}
+          >
+            <div ref={spinRef} className="sleep-mode-spin">
+              <div
+                className="sleep-mode-face"
+                style={{
+                  background: '#000000',
+                  WebkitMask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
+                  mask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
+                }}
+              />
+              <div
+                className="sleep-mode-face sleep-mode-face-back"
+                style={{
+                  background: '#000000',
+                  WebkitMask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
+                  mask: `url(/sleep-mode/${sleepSvg}.svg) center/cover no-repeat`,
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
+      {!isOverlayVisible && (
         <div
           className="header-center-box"
           style={{

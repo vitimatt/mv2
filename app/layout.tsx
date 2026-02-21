@@ -10,7 +10,6 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'MV+MV',
-  description: 'A Next.js application with embedded Sanity Studio',
 };
 
 export default function RootLayout({

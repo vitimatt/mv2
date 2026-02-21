@@ -37,29 +37,32 @@ body {
   height: 100dvh;
   min-height: 100vh;
   min-height: -webkit-fill-available;
-  padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Mobile: use body scroll so browser bar hides on scroll (like normal pages). */
+/* Mobile: use document-level scroll (html) so browser bar hides on scroll. */
 @media (max-width: 768px) {
   html {
-    overflow: auto;
-  }
-  body {
     overflow-y: auto;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overflow-anchor: auto;
+  }
+  body {
+    overflow: visible;
+    min-height: 100%;
+    height: auto;
     -webkit-overflow-scrolling: touch;
   }
   .scroll-root {
     overflow: visible;
     height: auto;
     min-height: 0;
-    padding-bottom: env(safe-area-inset-bottom);
   }
-  .about-overlay {
-    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+  /* Hide page content when about is open (about content is portaled into scroll-root) */
+  body.about-open .scroll-root > *:not([data-about-content]) {
+    display: none !important;
   }
 }
 
