@@ -132,7 +132,8 @@ export async function POST(
       );
     }
 
-    if (collection.password !== password) {
+    const storedPassword = collection.password;
+    if (!storedPassword || storedPassword !== password) {
       return NextResponse.json(
         { success: false, error: 'Invalid password' },
         { status: 401 }
@@ -146,7 +147,7 @@ export async function POST(
 
     response.cookies.set(
       getCollectionAccessCookieName(slug),
-      createCollectionAccessToken(slug, collection._id, collection.password),
+      createCollectionAccessToken(slug, collection._id, storedPassword),
       getCollectionAccessCookieOptions()
     );
 
