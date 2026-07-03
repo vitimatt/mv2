@@ -76,6 +76,7 @@ export function CollectionViewer({
 }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [data, setData] = useState<CollectionData | null>(null);
   const [showPassword, setShowPassword] = useState(true);
   const [showContent, setShowContent] = useState(false);
@@ -96,6 +97,33 @@ export function CollectionViewer({
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkSavedAccess() {
+      try {
+        const res = await fetch(`/api/collection/${slug}/verify`, {
+          credentials: 'same-origin',
+        });
+        const json = await res.json();
+        if (!cancelled && json.success && json.data) {
+          setShowPassword(false);
+          setData(json.data);
+          setShowContent(true);
+        }
+      } catch {
+        // Fall back to password form.
+      } finally {
+        if (!cancelled) setCheckingAccess(false);
+      }
+    }
+
+    checkSavedAccess();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
   const setMediaAspect = (key: string, width: number, height: number) => {
     setMediaDimensions((prev) => ({ ...prev, [key]: { width, height } }));
   };
@@ -114,6 +142,7 @@ export function CollectionViewer({
       const res = await fetch(`/api/collection/${slug}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ password }),
       });
       const json = await res.json();
@@ -355,6 +384,10 @@ export function CollectionViewer({
         ))}
       </main>
     );
+  }
+
+  if (checkingAccess) {
+    return <main style={{ minHeight: '100vh' }} />;
   }
 
   return (

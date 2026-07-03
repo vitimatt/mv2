@@ -25,7 +25,7 @@ export const collectionType = defineType({
       name: 'password',
       title: 'Password',
       type: 'string',
-      description: 'Required to view this collection',
+      description: 'Required to view this collection. Use Generate for a random secure password.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
